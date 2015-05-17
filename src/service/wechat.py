@@ -3,6 +3,7 @@ import time
 import urllib
 import urllib2
 import re
+import json
 
 from tornado.util import import_object
 from xml.etree import ElementTree as ET
@@ -49,19 +50,15 @@ class Wechat(object):
     def _myMsgHandle(self):
         if self.postMsg.msgType == 'text':
             command = self.postMsg.content.strip()
-            value = {'info':command}
-            req = urllib2.Request("http://www.tuling123.com/openapi/productexp.do", urllib.urlencode(value))
-            req.add_header('Cookie','JSESSIONID=aaa2rUy-Qesubf2DLcH1u; pgv_pvi=8508344320; pgv_si=s2071941120; CNZZDATA1000214860=1465977645-1431848223-%7C1432849191')
-            xml = ET.fromstring(urllib2.urlopen(req).read())
-            content = xml.find("Content")
-            if content != None:
-                regex = re.sub('图灵','',content.text)
-                regex = re.sub('[<>]','',regex)
-                regex = re.sub('[机器人]','饥渴的机器人',regex)
-                self.replyMsg = self._makeExceptionReplyMsg(regex)
+            req = urllib2.Request("http://www.tuling123.com/openapi/api?key=873ba8257f7835dfc537090fa4120d14&info=" + command)
+            data = json.loads(urllib2.urlopen(req).read())
+            if 'url' in data:
+                content = data['text'] + '\n' + data['url']
             else:
-                content = "本屌不才，您不要问我这个，我在鸟不拉屎星，听不懂您说的是哪里..."
-                self.replyMsg = self._makeExceptionReplyMsg(content)
+                content = data['text']
+            regex = re.sub(u'图灵机器人',u'饥渴的机器人',content)
+            regex = re.sub(';','\n',regex)
+            self.replyMsg = self._makeExceptionReplyMsg(regex)
             return
         elif self.postMsg.msgType == 'event':
             content = "欢迎关注本微信，这个微信是本人业余爱好所建立，也是想一边学习Python一边玩的东西，直接回复即可聊天。"
